@@ -1,0 +1,48 @@
+Push and save the data of de beehives' sensors
+---
+tags:
+  - Devices
+parameters:
+  - in: header
+    name: device_id
+    description: The id of the device master in the farm
+    type: string
+    required: true
+  - in: header
+    name: api_key
+    description: The api key to enter to the system
+    type: string
+    required: true
+  - in: body
+    name: Beehives' Sensors Data
+    description: The data about the all behives' sensors of the farm
+    required: true
+    schema: 
+      $ref: '#/definitions/BeehivesSensorsArray'
+consumes:
+  - application/json
+produces:
+  - application/json
+responses:
+  200:
+    description: Data save correctly
+  400:
+    description: Not satisfied model
+  401:
+    description: Not Authorized
+
+
+definitions:
+  BeehivesSensorsArray:
+    type: array
+    items:
+      minItems: 1
+      type: object
+      required:
+        - number
+        - weight
+      properties:
+        number:
+          type: integer
+        weight:
+          type: integer

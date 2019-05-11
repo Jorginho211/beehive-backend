@@ -15,7 +15,7 @@ def add_sensors_data(device_id, data):
         add_beehive_data(idBeehive, device.Farm.idFarm, device.Farm.idUser, weight)
 
 
-def create_beehive(idUser, idFarm, idBeehive):
+def create_beehive(idBeehive, idFarm, idUser):
     beehive = Beehive.query.filter(Beehive.idUser == idUser, Beehive.idFarm == idFarm, Beehive.idBeehive == idBeehive).first()
     if not beehive:
         beehive = Beehive(idBeehive, idFarm, idUser)

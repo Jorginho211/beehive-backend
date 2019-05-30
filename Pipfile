@@ -4,10 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-flask-sqlalchemy = "*"
 pymysql = "*"
 flasgger = "*"
 flask-marshmallow = "*"
+requests = "*"
+flask-peewee = "*"
 
 [dev-packages]
 pylint = "*"

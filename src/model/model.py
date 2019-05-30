@@ -1,84 +1,146 @@
+from peewee import *
 from ..exts import db
 
+class UnknownField(object):
+    def __init__(self, *_, **__): pass
 
-class User(db.Model):
-    __tablename__ = 'Users'
-        
-    idUser = db.Column('idUser', db.Integer, primary_key=True)
-    FirstName = db.Column('FirstName', db.String(255), nullable=False)
-    LastName = db.Column('LastName', db.String(255), nullable=False)
+class BaseModel(Model):
+    class Meta:
+        database = db
 
-    Credential = db.relationship("Credential", uselist=False, back_populates="User")
-    Farms = db.relationship("Farm", back_populates="User")
+class Users(BaseModel):
+    Email = CharField(column_name='Email')
+    FirstName = CharField(column_name='FirstName')
+    LastName = CharField(column_name='LastName')
+    idUser = AutoField(column_name='idUser')
 
-class Credential(db.Model):
-    __tablename__ = 'Credentials'
+    class Meta:
+        table_name = 'Users'
 
-    idUser = db.Column('idUser', db.Integer, db.ForeignKey(User.idUser), primary_key=True)
-    Username = db.Column('Username', db.String(255), nullable=False)
-    Password = db.Column('Password', db.String(255), nullable=False)
-    TokenAuthentication = db.Column('TokenAuthentication', db.String(255))
+class Farms(BaseModel):
+    Latitude = DecimalField(column_name='Latitude', null=True)
+    Longitude = DecimalField(column_name='Longitude', null=True)
+    Name = CharField(column_name='Name')
+    idFarm = IntegerField(column_name='idFarm')
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users)
+
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
+
+    class Meta:
+        table_name = 'Farms'
+        indexes = (
+            (('idFarm', 'idUser'), True),
+        )
+        primary_key = CompositeKey('idFarm', 'idUser')
+
+class Beehives(BaseModel):
+    Name = CharField(column_name='Name')
+    idBeehive = IntegerField(column_name='idBeehive')
+    idFarm = ForeignKeyField(column_name='idFarm', field='idFarm', model=Farms)
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users)
+
+    Farm = ForeignKeyField(backref='Farms_id_farm_set', column_name='idFarm', field='idFarm', model=Farms)
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
+
+    class Meta:
+        table_name = 'Beehives'
+        indexes = (
+            (('idBeehive', 'idUser', 'idFarm'), True),
+            (('idFarm', 'idUser'), False),
+        )
+        primary_key = CompositeKey('idBeehive', 'idFarm', 'idUser')
+
+class Credentials(BaseModel):
+    Password = CharField(column_name='Password')
+    TokenAuthentication = CharField(column_name='TokenAuthentication', null=True)
+    TokenForgot = CharField(column_name='TokenForgot', null=True)
+    Username = CharField(column_name='Username')
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users, primary_key=True)
+
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
+
+    class Meta:
+        table_name = 'Credentials'
+
+class Devices(BaseModel):
+    ApiKey = CharField(column_name='ApiKey', null=True)
+    Identifier = CharField(column_name='Identifier', unique=True)
+    idFarm = ForeignKeyField(column_name='idFarm', field='idFarm', model=Farms)
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users)
+
+    Farm = ForeignKeyField(backref='Farms_id_farm_set', column_name='idFarm', field='idFarm', model=Farms)
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
+
+    class Meta:
+        table_name = 'Devices'
+        indexes = (
+            (('idFarm', 'idUser'), False),
+            (('idUser', 'idFarm'), True),
+        )
+        primary_key = CompositeKey('idFarm', 'idUser')
+
+class MeteoSixData(BaseModel):
+    CloudAreaFraction = DecimalField(column_name='CloudAreaFraction')
+    Date = DateTimeField(column_name='Date', constraints=[SQL("DEFAULT CURRENT_TIMESTAMP")])
+    DatePrediction = DateTimeField(column_name='DatePrediction', constraints=[SQL("DEFAULT 0000-00-00 00:00:00")])
+    PrecipitationAmount = DecimalField(column_name='PrecipitationAmount')
+    RelativeHumidity = DecimalField(column_name='RelativeHumidity')
+    Temperature = IntegerField(column_name='Temperature')
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users)
+    idFarm = ForeignKeyField(column_name='idFarm', field='idFarm', model=Farms)
+    idMeteoSixData = IntegerField(column_name='idMeteoSixData')
     
-    User = db.relationship("User", uselist=False, back_populates="Credential")
+    Farm = ForeignKeyField(backref='Farms_id_farm_set', column_name='idFarm', field='idFarm', model=Farms)
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
+
+    class Meta:
+        table_name = 'MeteoSixData'
+        indexes = (
+            (('idFarm', 'idUser'), False),
+            (('idMeteoSixData', 'idFarm', 'idUser'), True),
+        )
+        primary_key = CompositeKey('idFarm', 'idMeteoSixData', 'idUser')
+
+class SensorsData(BaseModel):
+    Date = DateTimeField(column_name='Date', constraints=[SQL("DEFAULT CURRENT_TIMESTAMP")], index=True)
+    Weight = IntegerField(column_name='Weight', index=True, null=True)
+    idBeehive = ForeignKeyField(column_name='idBeehive', field='idBeehive', model=Beehives)
+    idFarm = ForeignKeyField(column_name='idFarm', field='idFarm', model=Farms)
+    idSensorsData = BigIntegerField(column_name='idSensorsData')
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users)
 
 
-class Farm(db.Model):
-    __tablename__ = 'Farms'
+    Beehive = ForeignKeyField(backref='Beehives_id_Beehive_set', column_name='idBeehive', field='idBeehive', model=Beehives)
+    Farm = ForeignKeyField(backref='Farms_id_farm_set', column_name='idFarm', field='idFarm', model=Farms)
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
 
-    idFarm = db.Column('idFarm', db.Integer, primary_key=True)
-    idUser = db.Column('idUser', db.Integer, db.ForeignKey(User.idUser), primary_key=True)
-    Name = db.Column('Name', db.String(255), nullable=False)
+    class Meta:
+        table_name = 'SensorsData'
+        indexes = (
+            (('idBeehive', 'idUser', 'idFarm'), False),
+            (('idSensorsData', 'idUser', 'idFarm', 'idBeehive'), True),
+        )
+        primary_key = CompositeKey('idBeehive', 'idFarm', 'idSensorsData', 'idUser')
 
-    User = db.relationship("User", uselist=False, back_populates="Farms")
-    Device = db.relationship("Device", uselist=False, back_populates="Farm")
-    Beehives = db.relationship("Beehive", back_populates="Farm")
+class SensorsDataHasMeteoSixData(BaseModel):
+    idBeehive = ForeignKeyField(column_name='idBeehive', field='idBeehive', model=Beehives)
+    idFarm = ForeignKeyField(column_name='idFarm', field='idFarm', model=Farms)
+    idMeteoSixData = ForeignKeyField(column_name='idMeteoSixData', field='idMeteoSixData', model=MeteoSixData)
+    idSensorsData = ForeignKeyField(column_name='idSensorsData', field='idSensorsData', model=SensorsData)
+    idUser = ForeignKeyField(column_name='idUser', field='idUser', model=Users)
 
-class Device(db.Model):
-    __tablename__ = 'Devices'
-
-    idUser = db.Column('idUser', db.Integer, db.ForeignKey(User.idUser), primary_key=True)
-    idFarm = db.Column('idFarm', db.Integer, db.ForeignKey(Farm.idFarm), primary_key=True)
-    Identifier = db.Column('Identifier', db.String(128), unique = True)
-    ApiKey = db.Column('ApiKey', db.String(128))
-
-    Farm = db.relationship("Farm", uselist=False, back_populates="Device")
-
-
-class Beehive(db.Model):
-    __tablename__ = 'Beehives'
-
-    idBeehive = db.Column('idBeehive', db.Integer, primary_key=True)
-    idFarm = db.Column('idFarm', db.Integer, db.ForeignKey(Farm.idFarm), primary_key=True)
-    idUser = db.Column('idUser', db.Integer, db.ForeignKey(User.idUser), primary_key=True)
-    Name = db.Column('Name', db.String(255), nullable=False)
-
-    Farm = db.relationship("Farm", uselist=False, back_populates="Beehives")
-    SensorsData = db.relationship("SensorsData", back_populates="Beehive")
-
-    def __init__(self, idBeehive, idFarm, idUser):
-        self.idBeehive = idBeehive
-        self.idFarm = idFarm
-        self.idUser = idUser
-        self.Name = "Beehive number: " + str(idBeehive)
+    Beehive = ForeignKeyField(backref='Beehives_id_Beehive_set', column_name='idBeehive', field='idBeehive', model=Beehives)
+    Farm = ForeignKeyField(backref='Farms_id_farm_set', column_name='idFarm', field='idFarm', model=Farms)
+    MeteoSixData = ForeignKeyField(backref="MeteoSixData_id_meteo_six_data_set", column_name='idMeteoSixData', field='idMeteoSixData', model=MeteoSixData)
+    SensorsData = ForeignKeyField(backref='SensorsData_id_sensors_data_set', column_name='idSensorsData', field='idSensorsData', model=SensorsData)
+    User = ForeignKeyField(backref='Users_id_user_set', column_name='idUser', field='idUser', model=Users)
 
 
-class SensorsData(db.Model):
-    __tablename__ = 'SensorsData'
+    class Meta:
+        table_name = 'SensorsData_has_MeteoSixData'
+        indexes = (
+            (('idSensorsData', 'idUser', 'idFarm', 'idBeehive'), False),
+            (('idSensorsData', 'idUser', 'idFarm', 'idBeehive', 'idMeteoSixData'), True),
+        )
+        primary_key = CompositeKey('idBeehive', 'idFarm', 'idMeteoSixData', 'idSensorsData', 'idUser')
 
-    idSensorsData = db.Column('idSensorsData', db.BigInteger, primary_key=True)
-    idBeehive = db.Column('idBeehive', db.Integer, db.ForeignKey(Beehive.idBeehive), primary_key=True)
-    idFarm = db.Column('idFarm', db.Integer, db.ForeignKey(Farm.idFarm), primary_key=True)
-    idUser = db.Column('idUser', db.Integer, db.ForeignKey(User.idUser), primary_key=True)
-    Date = db.Column('Date', db.DateTime, nullable=False)
-    Weight = db.Column('Weight', db.Integer)
-
-    Beehive = db.relationship("Beehive", uselist=False, back_populates="SensorsData")
-
-    def __init__(self, idSensorsData, idBeehive, idFarm, idUser, weight):
-        self.idSensorsData = idSensorsData
-        self.idBeehive = idBeehive
-        self.idFarm = idFarm
-        self.idUser = idUser
-        self.Weight = weight
-
-    

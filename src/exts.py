@@ -1,5 +1,5 @@
 from flask import Flask, g #flask
-from flask_sqlalchemy import SQLAlchemy
+from peewee import *
 
 app = Flask(__name__)
-db = SQLAlchemy()
+db = MySQLDatabase('beehive', **{'charset': 'utf8', 'use_unicode': True, 'user': 'root', 'password': 'root'})

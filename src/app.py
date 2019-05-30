@@ -2,13 +2,12 @@ from flask import Flask, g #flask
 from flasgger import Swagger
 from flasgger.utils import swag_from
 from .config import app_config #app config
-from .exts import db, app
+from .exts import app
 from .api.devices import devices_api
 
 def register_extensions():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/beehive'
     app.app_context().push()
-    db.init_app(app)
 
 def register_apis():
     app.register_blueprint(devices_api, url_prefix='/api/v1/') #registering devices

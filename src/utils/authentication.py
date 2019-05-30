@@ -12,7 +12,7 @@ def requires_authentication_device(f):
         if not deviceId or not apiKey:
             return custom_response({ msg: "device_id or api_key headers not found"}, 401)
 
-        device = Device.query.filter(Device.Identifier == deviceId, Device.ApiKey == apiKey).first()
+        device = Devices.select().where(Devices.Identifier == deviceId, Devices.ApiKey == apiKey).first()
 
         if not device:
             return custom_response({ 'msg': 'Not valid device or api key'}, 401)

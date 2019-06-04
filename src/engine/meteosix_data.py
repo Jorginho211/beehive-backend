@@ -57,7 +57,7 @@ def insert_meteosix_data(idFarm, idUser, meteoSixDTO):
         Temperature = meteoSixDTO.Temperature,
         RelativeHumidity = meteoSixDTO.RelativeHumidity,
         PrecipitationAmount = meteoSixDTO.PrecipitationAmount,
-        CloudAreaFraction = meteoSixDTO.PrecipitationAmount
+        CloudAreaFraction = meteoSixDTO.CloudAreaFraction
     )
 
     meteoSixData.save();
